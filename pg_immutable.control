@@ -1,0 +1,5 @@
+# pg_immutable extension
+comment = 'insert-only table AM '
+default_version = '0.0.1'
+module_pathname = '$libdir/pg_immutable'
+relocatable = true
