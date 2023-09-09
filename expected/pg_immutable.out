@@ -9,19 +9,22 @@ INSERT INTO pg_immutable_tab VALUES (1);
 SELECT * FROM pg_immutable_tab;
  a 
 ---
-(0 rows)
+ 1
+(1 row)
 
 UPDATE pg_immutable_tab SET a = 0 WHERE a = 1;
 SELECT * FROM pg_immutable_tab;
  a 
 ---
-(0 rows)
+ 1
+(1 row)
 
 DELETE FROM pg_immutable_tab WHERE a = 1;
 SELECT * FROM pg_immutable_tab;
  a 
 ---
-(0 rows)
+ 1
+(1 row)
 
 -- ALTER TABLE SET ACCESS METHOD
 ALTER TABLE pg_immutable_tab SET ACCESS METHOD heap;
@@ -30,13 +33,16 @@ SELECT * FROM pg_immutable_tab;
  a 
 ---
  1
-(1 row)
+ 1
+(2 rows)
 
 ALTER TABLE pg_immutable_tab SET ACCESS METHOD pg_immutable;
 SELECT * FROM pg_immutable_tab;
  a 
 ---
-(0 rows)
+ 1
+ 1
+(2 rows)
 
 -- Clean up
 DROP TABLE pg_immutable_tab;
