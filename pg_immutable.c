@@ -71,8 +71,7 @@ immutable_tuple_delete(Relation relation, ItemPointer tid, CommandId cid,
 					   Snapshot snapshot, Snapshot crosscheck, bool wait,
 					   TM_FailureData *tmfd, bool changingPart)
 {
-	/* nothing to do, so it is always OK */
-	return TM_Ok;
+	ereport(ERROR, (errmsg("pg_immutable: immutable_tuple_delete: cannot DELETE from an immutable table")));
 }
 
 
@@ -84,8 +83,7 @@ immutable_tuple_update(Relation relation, ItemPointer otid,
 					   LockTupleMode *lockmode,
 					   bool *update_indexes)
 {
-	/* nothing to do, so it is always OK */
-	return TM_Ok;
+	ereport(ERROR, (errmsg("pg_immutable: immutable_tuple_update: cannot UPDATE an immutable table")));
 }
 
 static TM_Result
@@ -94,27 +92,26 @@ immutable_tuple_lock(Relation relation, ItemPointer tid, Snapshot snapshot,
 					 LockWaitPolicy wait_policy, uint8 flags,
 					 TM_FailureData *tmfd)
 {
-	/* nothing to do, so it is always OK */
-	return TM_Ok;
+	ereport(ERROR, (errmsg("pg_immutable: immutable_tuple_lock: cannot lock an immutable table row")));
 }
 
 static void
 immutable_relation_nontransactional_truncate(Relation rel)
 {
-	/* nothing to do */
+	ereport(ERROR, (errmsg("pg_immutable: cannot truncate an immutable table")));
 }
 
 static void
 immutable_vacuum(Relation onerel, VacuumParams *params,
 				 BufferAccessStrategy bstrategy)
 {
-	/* nothing to do ? */
+	ereport(ERROR, (errmsg("pg_immutable: immutable_vacuum: cannot vacuum an immutable table")));
 }
 
 /* ------------------------------------------------------------------------
  * definition of the immutable table access methods:
  * - with default heap access methods
- * - redefined for INSERT/UPDATE/DELETE/TRUNCATE 
+ * - redefined for UPDATE/DELETE/TRUNCATE 
  * NB: must use static structure otherwise compiler complains
  * "initializer element is not constant".
  * ------------------------------------------------------------------------
@@ -132,6 +129,8 @@ pg_immutable_handler(PG_FUNCTION_ARGS)
 	memcpy(&immutable_access_method_struct.immutable_methods, local, sizeof(TableAmRoutine));
 	immutable_access_method_struct.immutable_methods.tuple_update = immutable_tuple_update;
 	immutable_access_method_struct.immutable_methods.tuple_delete = immutable_tuple_delete;
+	immutable_access_method_struct.immutable_methods.relation_vacuum = immutable_vacuum;
+	immutable_access_method_struct.immutable_methods.tuple_lock = immutable_tuple_lock;
 	immutable_access_method_struct.immutable_methods.relation_nontransactional_truncate = 
 		immutable_relation_nontransactional_truncate;
 

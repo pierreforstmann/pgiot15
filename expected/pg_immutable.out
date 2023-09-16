@@ -13,6 +13,7 @@ SELECT * FROM pg_immutable_tab;
 (1 row)
 
 UPDATE pg_immutable_tab SET a = 0 WHERE a = 1;
+ERROR:  pg_immutable: immutable_tuple_update: cannot UPDATE an immutable table
 SELECT * FROM pg_immutable_tab;
  a 
 ---
@@ -20,6 +21,7 @@ SELECT * FROM pg_immutable_tab;
 (1 row)
 
 DELETE FROM pg_immutable_tab WHERE a = 1;
+ERROR:  pg_immutable: immutable_tuple_delete: cannot DELETE from an immutable table
 SELECT * FROM pg_immutable_tab;
  a 
 ---
