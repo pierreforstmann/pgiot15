@@ -28,6 +28,20 @@ SELECT * FROM pg_immutable_tab;
  1
 (1 row)
 
+--
+create table t(c int) using pg_immutable;
+create index i on t(c);
+insert into t select generate_series(1, 1000000);
+delete from t;
+ERROR:  pg_immutable: immutable_tuple_delete: cannot DELETE from an immutable table
+update t set c=3 where c=999999;
+ERROR:  pg_immutable: immutable_tuple_update: cannot UPDATE an immutable table
+select * from t where c = 555555;
+   c    
+--------
+ 555555
+(1 row)
+
 -- ALTER TABLE SET ACCESS METHOD
 ALTER TABLE pg_immutable_tab SET ACCESS METHOD heap;
 INSERT INTO pg_immutable_tab VALUES (1);

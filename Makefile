@@ -1,4 +1,5 @@
-MODULES = pg_immutable 
+MODULES = pg_immutable pg_heapam
+OBJS=pg_immutable.o pg_heapam.o
 
 EXTENSION = pg_immutable 
 DATA = pg_immutable--0.0.1.sql
