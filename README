@@ -1,5 +1,0 @@
-pg_immutable
-============
-
-This module is a PostgreSQL extension for insert-only table access method. 
-
