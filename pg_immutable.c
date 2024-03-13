@@ -54,11 +54,18 @@
 #include "storage/smgr.h"
 #include "utils/builtins.h"
 #include "utils/rel.h"
-
+#include "executor/executor.h"
+#include "nodes/parsenodes.h"
+#include "utils/queryjumble.h"
+#include "parser/analyze.h"
+#include "commands/tablecmds.h"
 
 extern HeapTuple pgi_heap_getnext(TableScanDesc sscan, ScanDirection direction);
 
 PG_MODULE_MAGIC;
+
+void		_PG_init(void);
+void		_PG_fini(void);
 
 PG_FUNCTION_INFO_V1(pg_immutable_handler);
 
@@ -816,4 +823,60 @@ pg_immutable_handler(PG_FUNCTION_ARGS)
 
 
 	PG_RETURN_POINTER(&immutable_access_method_struct.immutable_methods);
+}
+
+static post_parse_analyze_hook_type prev_post_parse_analyze_hook = NULL;
+static void pg_immutable_parse(ParseState *pstate, Query *query, JumbleState *jstate);
+
+/*
+ * Module load callback
+ */
+void
+_PG_init(void)
+{
+	/* 
+	 * Install hook 
+	 */
+	prev_post_parse_analyze_hook = post_parse_analyze_hook;
+ 	post_parse_analyze_hook = pg_immutable_parse;
+}
+
+/*
+ *  Module unload callback
+ */
+void
+_PG_fini(void)
+{
+	
+	/* 
+	 * Uninstall hooks 
+	 */
+	post_parse_analyze_hook = prev_post_parse_analyze_hook;
+
+}
+
+static void pg_immutable_parse(ParseState *pstate, Query *query, JumbleState *jstate)
+{
+	Node *parsetree = query->utilityStmt;
+	LOCKMODE lockmode;
+	Oid relid;
+	if (query->commandType == CMD_UTILITY && nodeTag(query->utilityStmt) == T_AlterTableStmt)
+	{
+		elog(LOG, "query=%s", pstate->p_sourcetext);
+		/*
+		 *  see ProcessUtilitySlow in ./src/backend/tcop/utility.c 
+		 */
+		lockmode = NoLock;
+		relid = AlterTableLookupRelation((AlterTableStmt *)parsetree, lockmode);
+		elog(LOG, "relid=%d", relid);
+
+		/*
+		 * check that relation AM is *not* pg_immutable:
+		 *
+		 * select relam into v_relam from pg_class where oid = <Oid> 
+		 * select oid into v_oid from pg_am where amname='pg_immutable'
+		 * if v_relam = v_oid : must trigger error "cannot ALTER TABLE for immutable AM"
+		*/		
+
+	}
 }
