@@ -44,21 +44,14 @@ select * from t where c = 555555;
 
 -- ALTER TABLE SET ACCESS METHOD
 ALTER TABLE pg_immutable_tab SET ACCESS METHOD heap;
-INSERT INTO pg_immutable_tab VALUES (1);
+ERROR:  Cannot change access method for immutable am
 SELECT * FROM pg_immutable_tab;
  a 
 ---
  1
- 1
-(2 rows)
+(1 row)
 
-ALTER TABLE pg_immutable_tab SET ACCESS METHOD pg_immutable;
-SELECT * FROM pg_immutable_tab;
- a 
----
- 1
- 1
-(2 rows)
-
+update pg_immutable_tab set a=1;
+ERROR:  pg_immutable: immutable_tuple_update: cannot UPDATE an immutable table
 -- Clean up
 DROP TABLE pg_immutable_tab;

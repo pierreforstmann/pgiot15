@@ -59,6 +59,7 @@
 #include "utils/queryjumble.h"
 #include "parser/analyze.h"
 #include "commands/tablecmds.h"
+#include "executor/spi.h"
 
 extern HeapTuple pgi_heap_getnext(TableScanDesc sscan, ScanDirection direction);
 
@@ -860,6 +861,16 @@ static void pg_immutable_parse(ParseState *pstate, Query *query, JumbleState *js
 	Node *parsetree = query->utilityStmt;
 	LOCKMODE lockmode;
 	Oid relid;
+	
+	StringInfoData buf_select;	
+	SPITupleTable *tuptable;
+	TupleDesc tupdesc;
+	int ret;
+	int nr;
+	Oid relam;
+	bool isnull;
+	Oid immutable_am;
+
 	if (query->commandType == CMD_UTILITY && nodeTag(query->utilityStmt) == T_AlterTableStmt)
 	{
 		elog(LOG, "query=%s", pstate->p_sourcetext);
@@ -868,15 +879,61 @@ static void pg_immutable_parse(ParseState *pstate, Query *query, JumbleState *js
 		 */
 		lockmode = NoLock;
 		relid = AlterTableLookupRelation((AlterTableStmt *)parsetree, lockmode);
-		elog(LOG, "relid=%d", relid);
+		elog(LOG, "pg_immutable_parse: relid=%d", relid);
 
 		/*
 		 * check that relation AM is *not* pg_immutable:
 		 *
-		 * select relam into v_relam from pg_class where oid = <Oid> 
 		 * select oid into v_oid from pg_am where amname='pg_immutable'
 		 * if v_relam = v_oid : must trigger error "cannot ALTER TABLE for immutable AM"
-		*/		
+		*/	
 
+		/*
+		 * to avoid: "ERROR:  cannot execute SQL without an outer snapshot or portal"
+		*/
+		PushActiveSnapshot(GetTransactionSnapshot());
+
+		SPI_connect();
+
+		/*
+		 * get relation access method id.
+		 */
+		initStringInfo(&buf_select);
+		appendStringInfo(&buf_select, 
+				     "select relam from pg_class where oid = '%d'", relid);
+		ret = SPI_execute(buf_select.data, false, 0);
+		if (ret != SPI_OK_SELECT)
+			elog(FATAL, "cannot select from pg_class for relid: %d  error code: %d", relid, ret);
+		nr = SPI_processed;
+		if (nr == 0)
+			elog(FATAL, "relid %d not found in pg_class", relid);
+
+		tuptable = SPI_tuptable;
+		tupdesc = tuptable->tupdesc;
+		relam = DatumGetInt32(SPI_getbinval(tuptable->vals[0], tupdesc, 1, &isnull));	
+		elog(LOG, "pg_immutable_parse: relam=%d", relam);
+
+		/*
+		 * get immutable access method id.
+		*/
+		initStringInfo(&buf_select);
+		appendStringInfo(&buf_select, 
+				     "select oid from pg_am where amname='pg_immutable'");
+		ret = SPI_execute(buf_select.data, false, 0);
+		if (ret != SPI_OK_SELECT)
+			elog(FATAL, "cannot select from pg_am error code: %d", ret);
+		nr = SPI_processed;
+		if (nr == 0)
+			elog(FATAL, "am 'pg_immutable' not found in pg_am");
+
+		tuptable = SPI_tuptable;
+		tupdesc = tuptable->tupdesc;
+		immutable_am = DatumGetInt32(SPI_getbinval(tuptable->vals[0], tupdesc, 1, &isnull));	
+		elog(LOG, "pg_immutable_parse: immutable_am=%d", immutable_am);
+
+		SPI_finish();
+
+		if (relam == immutable_am)
+			elog(ERROR, "Cannot change access method for immutable am");
 	}
 }

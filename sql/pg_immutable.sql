@@ -17,10 +17,8 @@ select * from t where c = 555555;
 
 -- ALTER TABLE SET ACCESS METHOD
 ALTER TABLE pg_immutable_tab SET ACCESS METHOD heap;
-INSERT INTO pg_immutable_tab VALUES (1);
 SELECT * FROM pg_immutable_tab;
-ALTER TABLE pg_immutable_tab SET ACCESS METHOD pg_immutable;
-SELECT * FROM pg_immutable_tab;
+update pg_immutable_tab set a=1;
 
 -- Clean up
 DROP TABLE pg_immutable_tab;
