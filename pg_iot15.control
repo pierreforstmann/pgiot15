@@ -1,5 +1,5 @@
-# pg_immutable extension
+# pg_iot15 extension
 comment = 'insert-only table AM '
 default_version = '0.0.1'
-module_pathname = '$libdir/pg_immutable'
+module_pathname = '$libdir/pg_iot15'
 relocatable = true

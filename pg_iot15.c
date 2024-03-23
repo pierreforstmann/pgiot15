@@ -1,7 +1,7 @@
 /*-------------------------------------------------------------------------
  *
- * pg_immutable.c
- *	  immutable table access method code
+ * pg_iot15.c
+ *	  iot15 table access method code
  *
  * Portions Copyright (c) 1996-2023, PostgreSQL Global Development Group
  * Portions Copyright (c) 1994, Regents of the University of California
@@ -68,7 +68,7 @@ PG_MODULE_MAGIC;
 void		_PG_init(void);
 void		_PG_fini(void);
 
-PG_FUNCTION_INFO_V1(pg_immutable_handler);
+PG_FUNCTION_INFO_V1(pg_iot15_handler);
 
 /* Base structures for scans */
 typedef struct ImmuTableScanDescData
@@ -81,12 +81,12 @@ typedef struct ImmuTableScanDescData *ImmuTableScanDesc;
 
 
 /* ------------------------------------------------------------------------
- * Slot related callbacks for immutable  AM
+ * Slot related callbacks for iot15  AM
  * ------------------------------------------------------------------------
  */
 
 static const TupleTableSlotOps *
-immutable_slot_callbacks(Relation relation)
+iot15_slot_callbacks(Relation relation)
 {
 	/*
 	 * Here you would most likely want to invent your own set of slot
@@ -96,48 +96,48 @@ immutable_slot_callbacks(Relation relation)
 }
 
 static TransactionId
-immutable_index_delete_tuples(Relation rel,
+iot15_index_delete_tuples(Relation rel,
 							  TM_IndexDeleteOp *delstate)
 {
 	return InvalidTransactionId;
 }
 
 /* ----------------------------------------------------------------------------
- *  Functions for manipulations of physical tuples for immutable AM.
+ *  Functions for manipulations of physical tuples for iot15 AM.
  * ----------------------------------------------------------------------------
  */
 
 static TM_Result
-immutable_tuple_delete(Relation relation, ItemPointer tid, CommandId cid,
+iot15_tuple_delete(Relation relation, ItemPointer tid, CommandId cid,
 					   Snapshot snapshot, Snapshot crosscheck, bool wait,
 					   TM_FailureData *tmfd, bool changingPart)
 {
-	ereport(ERROR, (errmsg("pg_immutable: immutable_tuple_delete: cannot DELETE from an immutable table")));
+	ereport(ERROR, (errmsg("pg_iot15: iot15_tuple_delete: cannot DELETE from an iot15 table")));
 }
 
 
 static TM_Result
-immutable_tuple_update(Relation relation, ItemPointer otid,
+iot15_tuple_update(Relation relation, ItemPointer otid,
 					   TupleTableSlot *slot, CommandId cid,
 					   Snapshot snapshot, Snapshot crosscheck,
 					   bool wait, TM_FailureData *tmfd,
 					   LockTupleMode *lockmode,
 					   bool *update_indexes)
 {
-	ereport(ERROR, (errmsg("pg_immutable: immutable_tuple_update: cannot UPDATE an immutable table")));
+	ereport(ERROR, (errmsg("pg_iot15: iot15_tuple_update: cannot UPDATE an iot15 table")));
 }
 
 static TM_Result
-immutable_tuple_lock(Relation relation, ItemPointer tid, Snapshot snapshot,
+iot15_tuple_lock(Relation relation, ItemPointer tid, Snapshot snapshot,
 					 TupleTableSlot *slot, CommandId cid, LockTupleMode mode,
 					 LockWaitPolicy wait_policy, uint8 flags,
 					 TM_FailureData *tmfd)
 {
-	ereport(ERROR, (errmsg("pg_immutable: immutable_tuple_lock: cannot lock an immutable table row")));
+	ereport(ERROR, (errmsg("pg_iot15: iot15_tuple_lock: cannot lock an iot15 table row")));
 }
 
 static void
-immutable_relation_nontransactional_truncate(Relation rel)
+iot15_relation_nontransactional_truncate(Relation rel)
 {
 	/*
 	 * only called in some cases by heap_truncate_one_rel.
@@ -147,14 +147,14 @@ immutable_relation_nontransactional_truncate(Relation rel)
 	 * as the relfilenode value. The old storage file is scheduled for
 	 * deletion at commit.
 	 */
-	ereport(ERROR, (errmsg("pg_immutable: cannot truncate an immutable table")));
+	ereport(ERROR, (errmsg("pg_iot15: cannot truncate an iot15 table")));
 }
 
 static void
-immutable_vacuum(Relation onerel, VacuumParams *params,
+iot15_vacuum(Relation onerel, VacuumParams *params,
 				 BufferAccessStrategy bstrategy)
 {
-	ereport(ERROR, (errmsg("pg_immutable: immutable_vacuum: cannot vacuum an immutable table")));
+	ereport(ERROR, (errmsg("pg_iot15: iot15_vacuum: cannot vacuum an iot15 table")));
 }
 
 /* -----------------------------------------------------------------------------------------------------
@@ -216,11 +216,11 @@ heapam_scan_get_blocks_done(HeapScanDesc hscan)
  * src/backend/access/heap/heapam_handler.c version 15.4
  * using: 
  * sed -n '1158,1731p' /home/pierre/.pgenv/src/postgresql-15.4/src/backend/access/heap/heapam_handler.c > table_index_build_scan.c
- * function heapam_index_build_range_scan renamed to immutable_index_build_range_scan
+ * function heapam_index_build_range_scan renamed to iot15_index_build_range_scan
  */
 
 static double
-immutable_index_build_range_scan(Relation heapRelation,
+iot15_index_build_range_scan(Relation heapRelation,
 							  Relation indexRelation,
 							  IndexInfo *indexInfo,
 							  bool allow_sync,
@@ -795,7 +795,7 @@ immutable_index_build_range_scan(Relation heapRelation,
 }
 
 /* ------------------------------------------------------------------------
- * Definition of the immutable table access methods:
+ * Definition of the iot15 table access methods:
  * - with default heap access methods
  * - redefined for UPDATE/DELETE/TRUNCATE 
  * NB: must use static structure otherwise compiler complains
@@ -804,30 +804,30 @@ immutable_index_build_range_scan(Relation heapRelation,
  */
 
 static struct {
-	TableAmRoutine immutable_methods;
-} immutable_access_method_struct;
+	TableAmRoutine iot15_methods;
+} iot15_access_method_struct;
 
 Datum
-pg_immutable_handler(PG_FUNCTION_ARGS)
+pg_iot15_handler(PG_FUNCTION_ARGS)
 {
 	TableAmRoutine *local = GetHeapamTableAmRoutine();
 
-	memcpy(&immutable_access_method_struct.immutable_methods, local, sizeof(TableAmRoutine));
-	immutable_access_method_struct.immutable_methods.tuple_update = immutable_tuple_update;
-	immutable_access_method_struct.immutable_methods.tuple_delete = immutable_tuple_delete;
-	immutable_access_method_struct.immutable_methods.relation_vacuum = immutable_vacuum;
-	immutable_access_method_struct.immutable_methods.tuple_lock = immutable_tuple_lock;
-	immutable_access_method_struct.immutable_methods.relation_nontransactional_truncate = 
-		immutable_relation_nontransactional_truncate;
-	immutable_access_method_struct.immutable_methods.index_build_range_scan =
-	       immutable_index_build_range_scan;
+	memcpy(&iot15_access_method_struct.iot15_methods, local, sizeof(TableAmRoutine));
+	iot15_access_method_struct.iot15_methods.tuple_update = iot15_tuple_update;
+	iot15_access_method_struct.iot15_methods.tuple_delete = iot15_tuple_delete;
+	iot15_access_method_struct.iot15_methods.relation_vacuum = iot15_vacuum;
+	iot15_access_method_struct.iot15_methods.tuple_lock = iot15_tuple_lock;
+	iot15_access_method_struct.iot15_methods.relation_nontransactional_truncate = 
+		iot15_relation_nontransactional_truncate;
+	iot15_access_method_struct.iot15_methods.index_build_range_scan =
+	       iot15_index_build_range_scan;
 
 
-	PG_RETURN_POINTER(&immutable_access_method_struct.immutable_methods);
+	PG_RETURN_POINTER(&iot15_access_method_struct.iot15_methods);
 }
 
 static post_parse_analyze_hook_type prev_post_parse_analyze_hook = NULL;
-static void pg_immutable_parse(ParseState *pstate, Query *query, JumbleState *jstate);
+static void pg_iot15_parse(ParseState *pstate, Query *query, JumbleState *jstate);
 
 /*
  * Module load callback
@@ -839,7 +839,7 @@ _PG_init(void)
 	 * Install hook 
 	 */
 	prev_post_parse_analyze_hook = post_parse_analyze_hook;
- 	post_parse_analyze_hook = pg_immutable_parse;
+ 	post_parse_analyze_hook = pg_iot15_parse;
 }
 
 /*
@@ -856,7 +856,7 @@ _PG_fini(void)
 
 }
 
-static void pg_immutable_parse(ParseState *pstate, Query *query, JumbleState *jstate)
+static void pg_iot15_parse(ParseState *pstate, Query *query, JumbleState *jstate)
 {
 	Node *parsetree = query->utilityStmt;
 	LOCKMODE lockmode;
@@ -869,7 +869,7 @@ static void pg_immutable_parse(ParseState *pstate, Query *query, JumbleState *js
 	int nr;
 	Oid relam;
 	bool isnull;
-	Oid immutable_am;
+	Oid iot15_am;
 
 	if (query->commandType == CMD_UTILITY && nodeTag(query->utilityStmt) == T_AlterTableStmt)
 	{
@@ -879,13 +879,13 @@ static void pg_immutable_parse(ParseState *pstate, Query *query, JumbleState *js
 		 */
 		lockmode = NoLock;
 		relid = AlterTableLookupRelation((AlterTableStmt *)parsetree, lockmode);
-		elog(LOG, "pg_immutable_parse: relid=%d", relid);
+		elog(LOG, "pg_iot15_parse: relid=%d", relid);
 
 		/*
-		 * check that relation AM is *not* pg_immutable:
+		 * check that relation AM is *not* pg_iot15:
 		 *
-		 * select oid into v_oid from pg_am where amname='pg_immutable'
-		 * if v_relam = v_oid : must trigger error "cannot ALTER TABLE for immutable AM"
+		 * select oid into v_oid from pg_am where amname='pg_iot15'
+		 * if v_relam = v_oid : must trigger error "cannot ALTER TABLE for iot15 AM"
 		*/	
 
 		/*
@@ -911,29 +911,29 @@ static void pg_immutable_parse(ParseState *pstate, Query *query, JumbleState *js
 		tuptable = SPI_tuptable;
 		tupdesc = tuptable->tupdesc;
 		relam = DatumGetInt32(SPI_getbinval(tuptable->vals[0], tupdesc, 1, &isnull));	
-		elog(LOG, "pg_immutable_parse: relam=%d", relam);
+		elog(LOG, "pg_iot15_parse: relam=%d", relam);
 
 		/*
-		 * get immutable access method id.
+		 * get iot15 access method id.
 		*/
 		initStringInfo(&buf_select);
 		appendStringInfo(&buf_select, 
-				     "select oid from pg_am where amname='pg_immutable'");
+				     "select oid from pg_am where amname='pg_iot15'");
 		ret = SPI_execute(buf_select.data, false, 0);
 		if (ret != SPI_OK_SELECT)
 			elog(FATAL, "cannot select from pg_am error code: %d", ret);
 		nr = SPI_processed;
 		if (nr == 0)
-			elog(FATAL, "am 'pg_immutable' not found in pg_am");
+			elog(FATAL, "am 'pg_iot15' not found in pg_am");
 
 		tuptable = SPI_tuptable;
 		tupdesc = tuptable->tupdesc;
-		immutable_am = DatumGetInt32(SPI_getbinval(tuptable->vals[0], tupdesc, 1, &isnull));	
-		elog(LOG, "pg_immutable_parse: immutable_am=%d", immutable_am);
+		iot15_am = DatumGetInt32(SPI_getbinval(tuptable->vals[0], tupdesc, 1, &isnull));	
+		elog(LOG, "pg_iot15_parse: iot15_am=%d", iot15_am);
 
 		SPI_finish();
 
-		if (relam == immutable_am)
-			elog(ERROR, "Cannot change access method for immutable am");
+		if (relam == iot15_am)
+			elog(ERROR, "Cannot change access method for iot15 am");
 	}
 }
